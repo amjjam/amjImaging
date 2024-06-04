@@ -1,12 +1,12 @@
 #ifndef prefix
 	prefix=/opt/amj
-endif
+#endif
 
 FLAGS=-Wall -g -O3 -fPIC
 CPPFLAGS=$(FLAGS)
 
 AMJIMAGING_SRC=amjImaging.C
-AMJIMAGING_OBJ=$(AMJIMAGING_OBJ:.C=.o)
+AMJIMAGING_OBJ=$(AMJIMAGING_SRC:.C=.o)
 
 CPP=g++ (CPPFLAGS)
 
