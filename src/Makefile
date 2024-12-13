@@ -2,23 +2,23 @@
 	prefix=/opt/amj
 #endif
 
-FLAGS=-Wall -g -O3 -fPIC
+FLAGS=-Wall -g -O3 -fPIC -I/opt/amj/include
 CPPFLAGS=$(FLAGS)
 
 AMJIMAGING_SRC=amjImaging.C
 AMJIMAGING_OBJ=$(AMJIMAGING_SRC:.C=.o)
 
-CPP=g++ (CPPFLAGS)
+CPP=g++ $(CPPFLAGS)
 
 all: libamjImaging.so
 
-libamjImaging: $(AMJIMAGING_OBJ)
+libamjImaging.so: $(AMJIMAGING_OBJ)
 	$(CPP) -shared -Wl,-soname,$@ -o $@ $^
 
-install: libamjImaging ../include/amjImaging.H ../include/amjPImaging.H
+install: libamjImaging.so ../include/amjImaging.H ../include/amjPImaging.H
 	mkdir -p $(prefix)/lib
 	mkdir -p $(prefix)/include
-	cp libamjFourier.so $(prefix)/lib
+	cp libamjImaging.so $(prefix)/lib
 	cp ../include/amjImaging.H $(prefix)/include
 	cp ../include/amjPImaging.H $(prefix)/include
 

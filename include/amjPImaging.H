@@ -7,16 +7,16 @@
 
 namespace amjImaging{
   template<class T>
-  class amjPImage1{
+  class PImage1{
   public:
-    amjPImage1(unsigned int, MPI_Comm);
-    virtual ~amjPImage1(){};
+    PImage1(unsigned int, MPI_Comm);
+    virtual ~PImage1(){};
     unsigned int size(){return N;}
     unsigned int localsize(){return ranksize();}
     virtual int globalindex(int localindex);
     T &operator[](int i){return _image[i];};
     void gather();
-    virtual void getimage(amjImaging::amjImage1<T> &);
+    virtual void getimage(amjImaging::Image1<T> &);
   protected:
     MPI_Comm _comm;
   private:
@@ -28,7 +28,7 @@ namespace amjImaging{
   };
   
   template<class T>
-  amjPImage1<T>::amjPImage1(unsigned int _N, MPI_Comm comm_){
+  PImage1<T>::PImage1(unsigned int _N, MPI_Comm comm_){
     MPI_Comm_dup(comm_,&_comm);
     int comm_size,comm_rank;
     MPI_Comm_size(_comm,&comm_size);
@@ -41,7 +41,7 @@ namespace amjImaging{
   }
   
   template<class T>
-  int amjPImage1<T>::globalindex(int localindex){
+  int PImage1<T>::globalindex(int localindex){
     int comm_rank;
     MPI_Comm_rank(_comm,&comm_rank);
     int j=0;
@@ -51,7 +51,7 @@ namespace amjImaging{
   }
   
   template<class T>
-  void amjPImage1<T>::gather(){
+  void PImage1<T>::gather(){
     int comm_size,comm_rank;
     MPI_Comm_size(_comm,&comm_size);
     MPI_Comm_rank(_comm,&comm_rank);
@@ -69,7 +69,7 @@ namespace amjImaging{
   // This function may only be called from rank=0. It will abort if it
   // is not called from rank=0
   template<class T>
-  void amjPImage1<T>::getimage(amjImaging::amjImage1<T> &image){
+  void PImage1<T>::getimage(amjImaging::Image1<T> &image){
     int comm_rank;
     MPI_Comm_rank(_comm,&comm_rank);
     if(comm_rank!=0){
@@ -82,7 +82,7 @@ namespace amjImaging{
   }
   
   template<class T>
-  unsigned int amjPImage1<T>::ranksize(int rank){
+  unsigned int PImage1<T>::ranksize(int rank){
     int comm_size;
     MPI_Comm_size(_comm,&comm_size);
     unsigned int n=N/comm_size;
@@ -94,7 +94,7 @@ namespace amjImaging{
   }
   
   template<class T>
-  unsigned int amjPImage1<T>::maxranksize(){
+  unsigned int PImage1<T>::maxranksize(){
     int comm_size;
     MPI_Comm_size(_comm,&comm_size);
     unsigned int n=N/(unsigned int)comm_size;
@@ -104,14 +104,14 @@ namespace amjImaging{
   }
   
   template<class T>
-  class amjPImage: public amjPImage1<T>{
+  class PImage: public PImage1<T>{
   public:
-    amjPImage(unsigned int nR, unsigned int nC, MPI_Comm comm):
-      amjPImage1<T>(nR*nC,comm),_nR(nR),_nC(nC){};
-    virtual ~amjPImage(){};
+    PImage(unsigned int nR, unsigned int nC, MPI_Comm comm):
+      PImage1<T>(nR*nC,comm),_nR(nR),_nC(nC){};
+    virtual ~PImage(){};
     unsigned int nR() const {return _nR;};
     unsigned int nC() const {return _nC;};
-    virtual void getimage(amjImaging::amjImage<T> &);
+    virtual void getimage(Image<T> &);
   private:
     unsigned int _nR;
     unsigned int _nC;
@@ -121,7 +121,7 @@ namespace amjImaging{
   // This function may only be called from rank=0. It will abort if it
   // is not called from rank=0
   template<class T>
-  void amjPImage<T>::getimage(amjImaging::amjImage<T> &image){
+  void PImage<T>::getimage(Image<T> &image){
     int comm_rank;
     MPI_Comm_rank(this->_comm,&comm_rank);
     if(comm_rank!=0){
@@ -130,25 +130,25 @@ namespace amjImaging{
       abort();
     }
     image.resize(_nR,_nC);
-    amjPImage1<T>::getimage(image);
+    PImage1<T>::getimage(image);
   }
   
   template<class T>
-  class amjPCamera1{
+  class PCamera1{
   public:
-    amjPCamera1(){};
-    virtual ~amjPCamera1(){};
-    void snap(amjPImage1<T> &, amjImaging::amjValue<T> &,
-	      amjImaging::amjRange<T> &,
-	      amjImaging::amjIntegrator<T> &);
-    void snap(amjImage1<amjLos> &);
-    virtual amjLos getlos(int gi)=0;
+    PCamera1(){};
+    virtual ~PCamera1(){};
+    void snap(PImage1<T> &, amjImaging::Value<T> &,
+	      amjImaging::Ranges<T> &,
+	      amjImaging::Integrator<T> &);
+    void snap(Image1<Los> &);
+    virtual Los getlos(int gi)=0;
   };
   
   template<class T>
-  void amjPCamera1<T>::snap(amjPImage1<T> &image, amjValue<T> &value,
-			    amjRange<T> &range, amjIntegrator<T> &integrator){
-    amjLos los;
+  void PCamera1<T>::snap(PImage1<T> &image, Value<T> &value,
+			    Ranges<T> &range, Integrator<T> &integrator){
+    Los los;
     for(unsigned int i=0;i<image.localsize();i++){
       los=getlos(image.globalindex(i));
       image[i]=integrator.integrate(los,range,value);
@@ -157,36 +157,36 @@ namespace amjImaging{
   }
   
   template<class T>
-  void amjPCamera1<T>::snap(amjImage1<amjLos> &image){
+  void PCamera1<T>::snap(Image1<Los> &image){
     for(unsigned int i=0;i<image.size();i++)
       image[i]=getlos(i);
   }
   
   template<class T>
-  class amjPCamera: public amjPCamera1<T>{
+  class PCamera: public PCamera1<T>{
   public:
-    amjPCamera(){};
-    virtual ~amjPCamera(){};
-    virtual void snap(amjPImage<T> &, amjValue<T> &, amjRange<T> &,
-		      amjIntegrator<T> &);
-    virtual void snap(amjImage<amjLos> &);
+    PCamera(){};
+    virtual ~PCamera(){};
+    virtual void snap(PImage<T> &, Value<T> &, Ranges<T> &,
+		      Integrator<T> &);
+    virtual void snap(Image<Los> &);
   protected:
     unsigned int _nR;
     unsigned int _nC;
   };
   
   template<class T>
-  void amjPCamera<T>::snap(amjPImage<T> &image, amjValue<T> &value,
-			   amjRange<T> &range, amjIntegrator<T> &integrator){
+  void PCamera<T>::snap(PImage<T> &image, Value<T> &value,
+			   Ranges<T> &range, Integrator<T> &integrator){
     _nR=image.nR();
     _nC=image.nC();
-    amjPCamera1<T>::snap(image,value,range,integrator);
+    PCamera1<T>::snap(image,value,range,integrator);
   }
   
   template<class T>
-  void amjPCamera<T>::snap(amjImage<amjLos> &image){
+  void PCamera<T>::snap(Image<Los> &image){
     image.size(_nR,_nC);
-    amjPCamera1<T>::snap(image);
+    PCamera1<T>::snap(image);
   }
 
 }
